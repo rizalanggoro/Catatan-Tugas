@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Catatan Tugas Bersama</title>
+
+    <!-- import alpine js -->
+    <script
+      defer
+      src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"
+    ></script>
+
+    <style>
+      table,
+      th,
+      td {
+        border: 1px solid black;
+      }
+      th,
+      td {
+        padding: 4px 8px;
+      }
+    </style>
+  </head>
+  <body x-data="{isDaftarTugas: true}">
+    <h3 x-text="isDaftarTugas ? 'Daftar Tugas' : 'Tambah Tugas'"></h3>
+    <div>
+      <button x-on:click="isDaftarTugas = false">Tambah Tugas</button>
+      <button x-on:click="isDaftarTugas = true">Daftar Tugas</button>
+    </div>
+
+    <template x-if="!isDaftarTugas">
+      <div
+        style="margin-top: 16px"
+        x-data="{
+          title: '',
+          date: undefined,
+        }"
+      >
+        <input placeholder="Judul" style="display: block" x-model="title" />
+        <input
+          x-model="date"
+          placeholder="Tenggat"
+          type="date"
+          style="display: block; margin-top: 8px"
+        />
+        <button
+          x-bind:disabled="$store.tugas.isUploading"
+          x-on:click="$store.tugas.upload(title, date)"
+          style="margin-top: 16px"
+          x-text="$store.tugas.isUploading ? 'Mengunggah...' : 'Unggah'"
+        ></button>
+      </div>
+    </template>
+
+    <template x-if="isDaftarTugas">
+      <div>
+        <p
+          x-text="$store.tugas.isFetching ? 'Mengambil daftar tugas...' : 'Anda memiliki ' + $store.tugas.listTugas.length + ' tugas'"
+        ></p>
+        <table style="margin-top: 16px">
+          <tr>
+            <th>No</th>
+            <th>Judul</th>
+            <th>Tenggat</th>
+            <th>Sisa Waktu</th>
+            <th>Aksi</th>
+          </tr>
+          <template
+            x-for="(tugas, index) in $store.tugas.listTugas"
+            :key="tugas.key"
+          >
+            <tr>
+              <td x-text="(index + 1) + '.'"></td>
+              <td x-text="tugas.title"></td>
+              <td x-text="getTenggat(tugas.date)"></td>
+              <td x-text="hitungSisa(tugas.date)"></td>
+              <td>
+                <button x-on:click="$store.tugas.delete(tugas.key)">
+                  Hapus
+                </button>
+              </td>
+            </tr>
+          </template>
+        </table>
+      </div>
+    </template>
+
+    <script>
+      const hitungSisa = (dateStr) => {
+        const date = new Date(dateStr);
+        if (date instanceof Date && !isNaN(date)) {
+          const currentDate = new Date();
+          const diff = currentDate.getTime() - date.getTime();
+          const absDiff = Math.abs(diff);
+
+          const days = Math.floor(absDiff / (1000 * 60 * 60 * 24));
+          // const hours = Math.floor(
+          //   (diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+          // );
+          // const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+          return `${days == 0 ? "" : diff > 0 ? "-" : ""}${days} hari`;
+        }
+        return "-";
+      };
+
+      const getTenggat = (dateStr) => {
+        const date = new Date(dateStr);
+        if (date instanceof Date && !isNaN(date)) {
+          return date.toLocaleDateString("id-ID", {
+            weekday: "short",
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+          });
+        }
+        return "-";
+      };
+
+      const apiKey = "c0vukhanqvo_621brNFEyUSYA5U6vL7qPgBDLns5ZUm2";
+      const baseUrl = "https://database.deta.sh/v1/c0vukhanqvo/tugas";
+      const headers = {
+        "content-type": "application/json",
+        "x-api-key": apiKey,
+      };
+
+      document.addEventListener("alpine:init", () => {
+        Alpine.store("tugas", {
+          listTugas: [],
+          isUploading: false,
+          isFetching: false,
+
+          async delete(key) {
+            const response = await fetch(baseUrl + "/items/" + key, {
+              method: "DELETE",
+              headers,
+            });
+            if (response.ok) {
+              this.fetchTugas();
+            }
+          },
+
+          async upload(title, date) {
+            this.isUploading = true;
+            const response = await fetch(baseUrl + "/items", {
+              method: "POST",
+              headers,
+              body: JSON.stringify({
+                item: {
+                  title,
+                  date,
+                },
+              }),
+            });
+            const { status, statusText } = response;
+            console.log({ status, statusText });
+            this.isUploading = false;
+
+            if (response.ok) {
+              this.fetchTugas();
+            }
+          },
+
+          async fetchTugas() {
+            this.isFetching = true;
+            const response = await fetch(baseUrl + "/query", {
+              method: "POST",
+              headers,
+            });
+
+            if (response.ok) {
+              const { items } = await response.json();
+              this.listTugas = items;
+              this.listTugas.sort((a, b) => {
+                if (a.date != undefined && b.date != undefined) {
+                  return a.date.localeCompare(b.date);
+                }
+                return 0;
+              });
+            }
+            this.isFetching = false;
+          },
+        });
+
+        Alpine.store("tugas").fetchTugas();
+      });
+    </script>
+  </body>
+</html>
