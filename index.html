@@ -11,181 +11,171 @@
       src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"
     ></script>
 
-    <style>
-      table,
-      th,
-      td {
-        border: 1px solid black;
+    <!-- import tailwind css -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- import google fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap"
+      rel="stylesheet"
+    />
+
+    <style type="text/tailwindcss">
+      :root {
+        font-family: "Nunito", sans-serif;
       }
-      th,
-      td {
-        padding: 4px 8px;
+
+      input {
+        @apply border rounded block w-full py-2 px-4 outline-none focus:ring-2 ring-lime-600 duration-300 ring-offset-2;
       }
     </style>
   </head>
-  <body x-data="{isDaftarTugas: true}">
-    <h3 x-text="isDaftarTugas ? 'Daftar Tugas' : 'Tambah Tugas'"></h3>
-    <div>
-      <button x-on:click="isDaftarTugas = false">Tambah Tugas</button>
-      <button x-on:click="isDaftarTugas = true">Daftar Tugas</button>
-    </div>
-
-    <template x-if="!isDaftarTugas">
-      <div
-        style="margin-top: 16px"
-        x-data="{
-          title: '',
-          date: undefined,
-        }"
-      >
-        <input placeholder="Judul" style="display: block" x-model="title" />
-        <input
-          x-model="date"
-          placeholder="Tenggat"
-          type="date"
-          style="display: block; margin-top: 8px"
-        />
-        <button
-          x-bind:disabled="$store.tugas.isUploading"
-          x-on:click="$store.tugas.upload(title, date)"
-          style="margin-top: 16px"
-          x-text="$store.tugas.isUploading ? 'Mengunggah...' : 'Unggah'"
-        ></button>
+  <body x-data>
+    <!-- navbar -->
+    <header class="h-16 border-b fixed top-0 w-full backdrop-blur bg-white/70">
+      <div class="h-16 flex items-center max-w-[768px] mx-auto px-4">
+        <p class="font-bold">Catatan Tugas</p>
       </div>
-    </template>
+    </header>
 
-    <template x-if="isDaftarTugas">
-      <div>
-        <p
-          x-text="$store.tugas.isFetching ? 'Mengambil daftar tugas...' : 'Anda memiliki ' + $store.tugas.listTugas.length + ' tugas'"
-        ></p>
-        <table style="margin-top: 16px">
-          <tr>
-            <th>No</th>
-            <th>Judul</th>
-            <th>Tenggat</th>
-            <th>Sisa Waktu</th>
-            <th>Aksi</th>
-          </tr>
-          <template
-            x-for="(tugas, index) in $store.tugas.listTugas"
-            :key="tugas.key"
-          >
-            <tr>
-              <td x-text="(index + 1) + '.'"></td>
-              <td x-text="tugas.title"></td>
-              <td x-text="getTenggat(tugas.date)"></td>
-              <td x-text="hitungSisa(tugas.date)"></td>
-              <td>
-                <button x-on:click="$store.tugas.delete(tugas.key)">
-                  Hapus
-                </button>
-              </td>
-            </tr>
-          </template>
-        </table>
+    <main>
+      <div id="content" class="pt-16 mx-auto max-w-[512px] px-4">
+        <!-- tabs -->
+        <div
+          x-data="{
+            activeTab: 'tambahTugas',
+            tabs: [
+              {title: 'Daftar Tugas', value: 'daftarTugas'},
+              {title: 'Tambah Tugas', value: 'tambahTugas'},
+            ],
+          }"
+        >
+          <!-- tab list -->
+          <div class="grid grid-cols-2 border rounded-md p-2 mt-4">
+            <template x-for="tab in tabs">
+              <button
+                x-text="tab.title"
+                x-on:click="activeTab = tab.value"
+                x-bind:class="`rounded font-semibold py-2 px-4 ${tab.value == activeTab ? 'bg-lime-700 text-white shadow' : ''} hover:opacity-70 duration-300`"
+              ></button>
+            </template>
+          </div>
+
+          <!-- tab content -->
+          <div>
+            <template x-if="activeTab == 'daftarTugas'">
+              <div>
+                <h1 class="text-2xl font-semibold mt-4">Akan Datang</h1>
+                <p>
+                  Berikut beberapa tugas yang perlu Anda selesaikan sesuai
+                  dengan tenggat waktunya
+                </p>
+
+                <!-- list tasks -->
+                <section class="flex flex-col gap-1 my-4">
+                  <template
+                    x-for="(tugas, index) in $store.tugas.listTugas"
+                    :key="tugas.key"
+                  >
+                    <div class="flex rounded-md border p-4">
+                      <div class="flex-1">
+                        <h3
+                          class="font-semibold text-lg"
+                          x-text="tugas.title"
+                        ></h3>
+
+                        <p class="text-sm font-semibold">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="12"
+                            height="12"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2.32"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            class="lucide lucide-calendar-check-2 inline text-amber-700 mr-1"
+                          >
+                            <path d="M8 2v4" />
+                            <path d="M16 2v4" />
+                            <path
+                              d="M21 14V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h8"
+                            />
+                            <path d="M3 10h18" />
+                            <path d="m16 20 2 2 4-4" />
+                          </svg>
+
+                          <span x-text="getTenggat(tugas.date)"></span>
+                        </p>
+
+                        <p x-text="hitungSisa(tugas.date)"></p>
+                      </div>
+                      <div>
+                        <button x-on:click="$store.tugas.delete(tugas.key)">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="24"
+                            height="24"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            class="lucide lucide-trash-2"
+                          >
+                            <path d="M3 6h18" />
+                            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                            <line x1="10" x2="10" y1="11" y2="17" />
+                            <line x1="14" x2="14" y1="11" y2="17" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  </template>
+                </section>
+              </div>
+            </template>
+
+            <template x-if="activeTab == 'tambahTugas'">
+              <div
+                style="margin-top: 16px"
+                x-data="{
+                  title: '',
+                  date: undefined,
+                }"
+              >
+                <input
+                  placeholder="Judul"
+                  style="display: block"
+                  x-model="title"
+                />
+                <input
+                  x-model="date"
+                  placeholder="Tenggat"
+                  type="date"
+                  style="display: block; margin-top: 8px"
+                />
+                <button
+                  x-bind:disabled="$store.tugas.isUploading"
+                  x-on:click="$store.tugas.upload(title, date)"
+                  style="margin-top: 16px"
+                  x-text="$store.tugas.isUploading ? 'Mengunggah...' : 'Unggah'"
+                ></button>
+              </div>
+            </template>
+          </div>
+        </div>
       </div>
-    </template>
+    </main>
 
-    <script>
-      const hitungSisa = (dateStr) => {
-        const date = new Date(dateStr);
-        if (date instanceof Date && !isNaN(date)) {
-          const currentDate = new Date();
-          const diff = currentDate.getTime() - date.getTime();
-          const absDiff = Math.abs(diff);
+    <footer></footer>
 
-          const days = Math.floor(absDiff / (1000 * 60 * 60 * 24));
-          // const hours = Math.floor(
-          //   (diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
-          // );
-          // const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-
-          return `${days == 0 ? "" : diff > 0 ? "-" : ""}${days} hari`;
-        }
-        return "-";
-      };
-
-      const getTenggat = (dateStr) => {
-        const date = new Date(dateStr);
-        if (date instanceof Date && !isNaN(date)) {
-          return date.toLocaleDateString("id-ID", {
-            weekday: "short",
-            year: "numeric",
-            month: "short",
-            day: "numeric",
-          });
-        }
-        return "-";
-      };
-
-      const apiKey = "c0vukhanqvo_621brNFEyUSYA5U6vL7qPgBDLns5ZUm2";
-      const baseUrl = "https://database.deta.sh/v1/c0vukhanqvo/tugas";
-      const headers = {
-        "content-type": "application/json",
-        "x-api-key": apiKey,
-      };
-
-      document.addEventListener("alpine:init", () => {
-        Alpine.store("tugas", {
-          listTugas: [],
-          isUploading: false,
-          isFetching: false,
-
-          async delete(key) {
-            const response = await fetch(baseUrl + "/items/" + key, {
-              method: "DELETE",
-              headers,
-            });
-            if (response.ok) {
-              this.fetchTugas();
-            }
-          },
-
-          async upload(title, date) {
-            this.isUploading = true;
-            const response = await fetch(baseUrl + "/items", {
-              method: "POST",
-              headers,
-              body: JSON.stringify({
-                item: {
-                  title,
-                  date,
-                },
-              }),
-            });
-            const { status, statusText } = response;
-            console.log({ status, statusText });
-            this.isUploading = false;
-
-            if (response.ok) {
-              this.fetchTugas();
-            }
-          },
-
-          async fetchTugas() {
-            this.isFetching = true;
-            const response = await fetch(baseUrl + "/query", {
-              method: "POST",
-              headers,
-            });
-
-            if (response.ok) {
-              const { items } = await response.json();
-              this.listTugas = items;
-              this.listTugas.sort((a, b) => {
-                if (a.date != undefined && b.date != undefined) {
-                  return a.date.localeCompare(b.date);
-                }
-                return 0;
-              });
-            }
-            this.isFetching = false;
-          },
-        });
-
-        Alpine.store("tugas").fetchTugas();
-      });
-    </script>
+    <!-- import scripts -->
+    <script src="./scripts/script.js"></script>
   </body>
 </html>
